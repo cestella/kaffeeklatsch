@@ -2,34 +2,32 @@ package com.caseystella.llm.embeddings;
 
 import ai.djl.huggingface.tokenizers.Encoding;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.djl.util.PairList;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import java.nio.FloatBuffer;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class HuggingFaceBiEncoder implements IBiEncoder {
-
+public class HuggingFaceCrossEncoder {
   private HuggingFaceTokenizer tokenizer = null;
   private Path onnxLocation;
 
-  public HuggingFaceBiEncoder(HuggingFaceTokenizer tokenizer, Path onnxLocation) {
+  public HuggingFaceCrossEncoder(HuggingFaceTokenizer tokenizer, Path onnxLocation) {
     this.tokenizer = tokenizer;
     this.onnxLocation = onnxLocation;
   }
 
-  public HuggingFaceBiEncoder(String modelName, Path onnxLocation) {
+  public HuggingFaceCrossEncoder(String modelName, Path onnxLocation) {
     this(HuggingFaceUtil.resolveTokenizer(modelName, onnxLocation), onnxLocation);
   }
 
-  @Override
-  public Iterable<float[]> embed(String[] sentences, Optional<OrtEnvironment> environmentOpt)
+  public float[] embed(PairList<String, String> sentences, Optional<OrtEnvironment> environmentOpt)
       throws OrtException {
     Encoding[] encodings = tokenizer.batchEncode(sentences);
     OrtEnvironment environment = environmentOpt.orElse(OrtEnvironment.getEnvironment());
@@ -38,7 +36,7 @@ public class HuggingFaceBiEncoder implements IBiEncoder {
         environment.createSession(onnxLocation.toString(), new OrtSession.SessionOptions());
     Set<String> inputParams = session.getInputNames();
     Map<String, OnnxTensor> inputs = new HashMap<>();
-    long[] shape = {encodings.length, encodings[0].getAttentionMask().length};
+    long[] shape = {sentences.size(), encodings[0].getIds().length};
     if (inputParams.contains("input_ids")) {
       inputs.put(
           "input_ids", OnnxUtil.computeInput(encodings, shape, Encoding::getIds, environment));
@@ -56,14 +54,14 @@ public class HuggingFaceBiEncoder implements IBiEncoder {
     try (OrtSession.Result results = session.run(inputs)) {
       OnnxTensor outputTensor = (OnnxTensor) results.get(0);
       FloatBuffer outputBuffer = outputTensor.getFloatBuffer();
-      int dimension = outputBuffer.capacity() / sentences.length;
-      ArrayList<float[]> ret = new ArrayList<>(sentences.length);
-      for (int i = 0; i < sentences.length; ++i) {
-        float[] embedding = new float[dimension];
-        outputBuffer.get(embedding);
-        ret.add(embedding);
+
+      float[] logits = new float[sentences.size()];
+      for (int i = 0; i < sentences.size(); ++i) {
+        float[] logit = new float[1];
+        outputBuffer.get(logit);
+        logits[i] = logit[0];
       }
-      return ret;
+      return logits;
     } finally {
       session.close();
       if (environmentOpt.isEmpty()) {
