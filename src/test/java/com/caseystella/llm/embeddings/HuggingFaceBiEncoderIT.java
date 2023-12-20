@@ -4,7 +4,7 @@ import ai.djl.util.PairList;
 import ai.djl.util.StringPair;
 import ai.onnxruntime.OrtEnvironment;
 import com.caseystella.llm.nlp.NLPUtil;
-import java.nio.file.Path;
+import com.caseystella.llm.nlp.SentenceModels;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,13 +17,9 @@ import org.junit.jupiter.api.Test;
 public class HuggingFaceBiEncoderIT {
 
   private OrtEnvironment environment;
-  private Path embeddingModelHome;
-  private Path nlpModelHome;
 
   @BeforeEach
   public void setup() {
-    embeddingModelHome = Path.of(System.getProperty("embedding.model.home"));
-    nlpModelHome = Path.of(System.getProperty("nlp.model.home"));
     environment = OrtEnvironment.getEnvironment();
   }
 
@@ -36,7 +32,7 @@ public class HuggingFaceBiEncoderIT {
 
   @Test
   public void testBiEncoder() throws Exception {
-    IBiEncoder encoder = BiEncoders.ALL_MPNET_BASE_V2.create(embeddingModelHome);
+    IBiEncoder encoder = BiEncoders.ALL_MPNET_BASE_V2.create();
     String[] sentences = new String[] {"Hello world", "Greetings planet"};
     Iterator<float[]> embeddingsIt = encoder.embed(sentences, Optional.of(environment)).iterator();
     float[] embedding1 = embeddingsIt.next();
@@ -48,8 +44,7 @@ public class HuggingFaceBiEncoderIT {
 
   @Test
   public void testCrossEncoder_basic() throws Exception {
-    HuggingFaceCrossEncoder encoder =
-        CrossEncoders.MS_MARCO_MiniLM_L6_v2.create(embeddingModelHome);
+    HuggingFaceCrossEncoder encoder = CrossEncoders.MS_MARCO_MiniLM_L6_v2.create();
     PairList<String, String> input =
         new PairList<>() {
           {
@@ -83,8 +78,7 @@ public class HuggingFaceBiEncoderIT {
 
   @Test
   public void testCrossEncoder() throws Exception {
-    HuggingFaceCrossEncoder encoder =
-        CrossEncoders.MS_MARCO_MiniLM_L6_v2.create(embeddingModelHome);
+    HuggingFaceCrossEncoder encoder = CrossEncoders.MS_MARCO_MiniLM_L6_v2.create();
     String doc =
         "Europe is a continent located entirely in the Northern Hemisphere and mostly in the"
             + " Eastern Hemisphere. It comprises the westernmost part of Eurasia and is bordered by"
@@ -173,9 +167,7 @@ public class HuggingFaceBiEncoderIT {
             + " Evropa.";
     String query = "How large is Europe?";
     String[] paragraphs = doc.split("\n\n");
-    var model =
-        NLPUtil.loadModel(
-            Path.of(nlpModelHome.toString(), "opennlp-en-ud-ewt-sentence-1.0-1.9.3.bin"));
+    var model = SentenceModels.ENGLISH.create();
     List<String> sentences = new ArrayList<>();
     for (String paragraph : paragraphs) {
       for (String s : NLPUtil.splitBySentence(paragraph, model)) {
