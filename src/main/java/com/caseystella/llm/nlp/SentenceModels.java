@@ -23,6 +23,6 @@ public enum SentenceModels {
   }
 
   public SentenceModel create(Path nlpModelPath) throws IOException {
-    return NLPUtil.loadModel(DownloadUtil.downloadFile(name, nlpModelPath.toString()).toPath());
+    return NLPUtil.loadModel(DownloadUtil.downloadFile(url, nlpModelPath.toString()).toPath());
   }
 }

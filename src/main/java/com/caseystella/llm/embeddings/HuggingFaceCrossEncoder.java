@@ -7,6 +7,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -15,17 +16,14 @@ import java.util.Optional;
 import java.util.Set;
 
 public class HuggingFaceCrossEncoder {
-  private HuggingFaceTokenizer tokenizer = null;
-  private Path onnxLocation;
+  private final HuggingFaceTokenizer tokenizer;
+  private final Path onnxLocation;
 
-  public HuggingFaceCrossEncoder(HuggingFaceTokenizer tokenizer, Path onnxLocation) {
-    this.tokenizer = tokenizer;
-    this.onnxLocation = onnxLocation;
+  public HuggingFaceCrossEncoder(Path modelPath) throws IOException {
+    this.tokenizer = HuggingFaceTokenizer.newInstance(modelPath);
+    this.onnxLocation = HuggingFaceUtil.findModelFile(modelPath);
   }
 
-  public HuggingFaceCrossEncoder(String modelName, Path onnxLocation) {
-    this(HuggingFaceUtil.resolveTokenizer(modelName, onnxLocation), onnxLocation);
-  }
 
   public float[] embed(PairList<String, String> sentences, Optional<OrtEnvironment> environmentOpt)
       throws OrtException {

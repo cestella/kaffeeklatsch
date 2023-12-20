@@ -1,6 +1,9 @@
 package com.caseystella.llm.embeddings;
 
 public class EncodingUtil {
+  public static String normalizeEmbeddingName(String name) {
+    return name.replace("/", "_").replace(" ", "_");
+  }
   public static double cosineSimilarity(float[] vectorA, float[] vectorB) {
     if (vectorA.length != vectorB.length) {
       throw new IllegalArgumentException("Vectors must be of the same length");
