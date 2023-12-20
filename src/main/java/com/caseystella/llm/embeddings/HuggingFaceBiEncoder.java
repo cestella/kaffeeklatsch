@@ -6,6 +6,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,13 +20,10 @@ public class HuggingFaceBiEncoder implements IBiEncoder {
   private HuggingFaceTokenizer tokenizer = null;
   private Path onnxLocation;
 
-  public HuggingFaceBiEncoder(HuggingFaceTokenizer tokenizer, Path onnxLocation) {
-    this.tokenizer = tokenizer;
-    this.onnxLocation = onnxLocation;
-  }
 
-  public HuggingFaceBiEncoder(String modelName, Path onnxLocation) {
-    this(HuggingFaceUtil.resolveTokenizer(modelName, onnxLocation), onnxLocation);
+  public HuggingFaceBiEncoder(Path modelPath) throws IOException {
+    this.tokenizer = HuggingFaceTokenizer.newInstance(modelPath);
+    this.onnxLocation = HuggingFaceUtil.findModelFile(modelPath);
   }
 
   @Override
